@@ -9,6 +9,7 @@ import core.runtime;
 
 // TODO: checkmate in case when player can not do any turn.
 // TODO: condition of a draw.
+// TODO: find piece by predicate.
 
 class Piece {
     enum Color { Black, White };
@@ -24,12 +25,12 @@ class Piece {
         assert(0 <= col && col < 8);
     }
 
-    bool canMove(int new_row, int new_col, ChessBoard board) {
+    const bool canMove(int new_row, int new_col, ChessBoard board) {
         return (board.board[new_row][new_col] is null &&
                 canMoveInt(new_row, new_col, board));
     }
 
-    abstract bool canMoveInt(int new_row, int new_col, ChessBoard board);
+    abstract const bool canMoveInt(int new_row, int new_col, ChessBoard board);
 
     bool canAttack(int new_row, int new_col, ChessBoard board) {
         return (board.board[new_row][new_col] &&
@@ -62,13 +63,13 @@ class Piece {
         return _firstTurn;
     }
 
-    private:
-    Color oppositeColor() {
+    const Color oppositeColor() {
         final switch (_color) {
             case Color.White: return Color.Black;
             case Color.Black: return Color.White;
         }
     }
+    private:
     int row, col;
     Color _color;
     bool _firstTurn = true;
@@ -97,12 +98,6 @@ bool noObstacleAlong(int r0, int c0, int r1, int c1, ChessBoard board)
     assert(r0 == r1 || c0 == c1 || (abs(r1 - r0) == abs(c1 - c0)));
     int dr = sgn(r1 - r0);
     int dc = sgn(c1 - c0);
-    writeln("r0 ", r0);
-    writeln("r1 ", r1);
-    writeln("dr ", dr);
-    writeln("c0 ", c0);
-    writeln("c1 ", c1);
-    writeln("dc ", dc);
     for(int r = r0 + dr, c = c0 + dc; r != r1 || c != c1;
             r += dr, c += dc) {
         if (board.cellType(r, c) != CellType.Empty) {
@@ -120,7 +115,7 @@ public:
     this(int row, int col, Color color, ChessBoard board) {
         super(row, col, color, board);
     }
-    override bool canMoveInt(int new_row, int new_col, ChessBoard board) {
+    override const bool canMoveInt(int new_row, int new_col, ChessBoard board) {
         if (new_col != col) {
             return false;
         }
@@ -188,7 +183,7 @@ class Horse: Piece {
     this(int row, int col, Color color, ChessBoard board) {
         super(row, col, color, board);
     }
-    override bool canMoveInt(int new_row, int new_col, ChessBoard board) {
+    override const bool canMoveInt(int new_row, int new_col, ChessBoard board) {
         int d_row = abs(new_row - row);
         int d_col = abs(new_col - col);
         return min(d_row, d_col) == 1 && max(d_row, d_col) == 2;
@@ -202,7 +197,7 @@ class Tower: Piece {
     this(int row, int col, Color color, ChessBoard board) {
         super(row, col, color, board);
     }
-    override bool canMoveInt(int new_row, int new_col, ChessBoard board) {
+    override const bool canMoveInt(int new_row, int new_col, ChessBoard board) {
         if (row == new_row || col == new_col) {
             return noObstacleAlong(row, col, new_row, new_col, board);
         }
@@ -218,7 +213,7 @@ class Bishop: Piece {
     this(int row, int col, Color color, ChessBoard board) {
         super(row, col, color, board);
     }
-    override bool canMoveInt(int new_row, int new_col, ChessBoard board) {
+    override const bool canMoveInt(int new_row, int new_col, ChessBoard board) {
         if (abs(row - new_row) == abs(col - new_col)) {
             return noObstacleAlong(row, col, new_row, new_col, board);
         }
@@ -233,7 +228,7 @@ class King: Piece {
     this(int row, int col, Color color, ChessBoard board) {
         super(row, col, color, board);
     }
-    override bool canMoveInt(int new_row, int new_col, ChessBoard board) {
+    override const bool canMoveInt(int new_row, int new_col, ChessBoard board) {
         int abs_dy = abs(row - new_row);
         int abs_dx = abs(col - new_col);
         return (min(abs_dx, abs_dy).among(0, 1) && max(abs_dx, abs_dy) == 1 &&
@@ -249,7 +244,7 @@ class Queen: Piece {
     this(int row, int col, Color color, ChessBoard board) {
         super(row, col, color, board);
     }
-    override bool canMoveInt(int new_row, int new_col, ChessBoard board) {
+    override const bool canMoveInt(int new_row, int new_col, ChessBoard board) {
         int abs_dy = abs(row - new_row);
         int abs_dx = abs(col - new_col);
         if (abs_dx == 0 || abs_dy == 0 || abs_dx == abs_dy) {
@@ -269,6 +264,7 @@ class ChessBoard {
         uint nTurn;
         bool blackCheck, whiteCheck;
         bool blackWins, whiteWins;
+        bool draw;
         invariant() {
             uint b, w;
             foreach (r; 0..8) {
@@ -288,6 +284,7 @@ class ChessBoard {
             }
             assert(w == nWhite);
             assert(b == nBlack);
+            assert(blackWins + whiteWins + draw <= 1);
         }
     public:
         enum CastleType {
@@ -323,13 +320,9 @@ class ChessBoard {
         }
 
         bool endOfGame() {
-            return blackWins || whiteWins;
+            return blackWins || whiteWins || draw;
         }
 
-        // TODO: condition of a draw.
-        bool draw() {
-            assert(0);
-        }
 
         // TODO: save all states of piceses: firstTurn, turnOfLongStep
         void saveToFile(string fileName) {
@@ -431,6 +424,7 @@ class ChessBoard {
             if (board[r][c] is null) {
                 return CellType.Empty;
             }
+            // TODO: used typeID
             return board[r][c].type();
         }
 
@@ -506,13 +500,13 @@ class ChessBoard {
             uint rk, ck; // King's coords.
             bool check, checkMate;
             King k;
-            foreach(r; 0..8) {
+            outer: foreach(r; 0..8) {
                 foreach(c; 0..8) {
                     k = cast(King) board[r][c];
                     if (k && k.color() == currentPlayerColor())
                         rk = r;
                         ck = c;
-                        // TODO: multibreak;
+                        break outer;
                 }
             }
             check = cellIsUnderAttack(rk, ck, k.oppositeColor());
@@ -521,6 +515,35 @@ class ChessBoard {
                 (nTurn % 2 == 0) ? whiteWins : blackWins = true;
             }
             (nTurn % 2 == 0) ? whiteCheck : blackCheck = check;
+            
+            if (!check) {
+                return;
+            }
+
+            // This block of returns if current player can move any piece.
+            foreach(r; 0..8) {
+                foreach(c; 0..8) {
+                    auto p = board[r][c];
+                    if(p is null || p.color() != currentPlayerColor()) {
+                        continue;
+                    }
+                    foreach(r1; 0..8) {
+                        foreach(c1; 0..8) {
+                            if (r == r1 && c == c1) {
+                                continue;
+                            }
+                            if (p.canMove(r1, c1, this)) {
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+            if (check) {
+                (nTurn % 2 == 0) ? blackWins: whiteWins = true;
+            } else {
+                draw = true;
+            }
         }
 
         void setPiece(int row, int col, Piece p) {
@@ -552,6 +575,7 @@ class ChessBoard {
             }
             board[row][col] = null;
         }
+
         const bool canDoCasle(CastleType castleType) {
             uint row = (nTurn % 2 == 0) ? 0 : 7;
             King k = cast(King) board[row][4];
@@ -574,6 +598,7 @@ class ChessBoard {
             }
             return true;
         }
+
         void doCastle(CastleType castleType) {
             assert(canDoCasle(castleType));
             uint row = (nTurn % 2 == 0) ? 0 : 7;
@@ -596,20 +621,6 @@ class ChessBoard {
             ++nTurn;
             afterTurn();
         }
-}
-
-void read_coord(out int row, out int col, string primaryMsg, string secondaryMsg)
-{
-    int r, c;
-    writeln(primaryMsg);
-    try {
-        write(secondaryMsg);
-        readf(" %d %d", &r, &c);
-    } catch(std.conv.ConvException) {
-        readln();
-    }
-    row = r;
-    col = c;
 }
 
 class ChessConsoleUI {
