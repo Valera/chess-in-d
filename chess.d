@@ -1,3 +1,6 @@
+module chess;
+@safe
+
 import std.stdio;
 import std.algorithm;
 import std.ascii;
@@ -6,6 +9,7 @@ import std.string;
 import std.conv;
 import std.c.process;
 import core.runtime;
+
 
 // TODO: checkmate in case when player can not do any turn.
 // TODO: condition of a draw.
@@ -78,6 +82,33 @@ class Piece {
 enum CellType {
     Empty, Pawn, Tower, Horse, Bishop, King, Queen
 };
+
+wchar typeToCharUTF(CellType type, Piece.Color color) {
+    final switch(color) {
+        case Piece.Color.Black:
+            final switch(type) {
+                case CellType.Empty: return '.';
+                case CellType.Pawn: return '\u265F';
+                case CellType.Tower: return '\u265C';
+                case CellType.Horse: return '\u265E';
+                case CellType.Bishop: return '\u265D';
+                case CellType.King: return '\u265A';
+                case CellType.Queen: return '\u265B'; 
+            }
+            break;
+        case Piece.Color.White:
+            final switch(type) {
+                case CellType.Empty: return '.';
+                case CellType.Pawn: return '\u2659';
+                case CellType.Tower: return '\u2656';
+                case CellType.Horse: return '\u2658';
+                case CellType.Bishop: return '\u2657';
+                case CellType.King: return '\u2654';
+                case CellType.Queen: return '\u2655'; 
+            }
+            break;
+    }
+}
 
 char typeToChar(CellType type) {
     final switch(type) {
@@ -495,6 +526,14 @@ class ChessBoard {
             }
             return false;
         }
+
+        wchar cellUtfChar(uint row, uint col) {
+            auto cell = board[row][col];
+            if(cell is null) {
+                return '.';
+            }
+            return typeToCharUTF(cell.type(), cellColor(row, col));
+        }
         
         void afterTurn() {
             uint rk, ck; // King's coords.
@@ -714,10 +753,12 @@ class ChessConsoleUI {
 
 }
 
+/*
 void main()
 {
     writeln("main OK");
     auto game = new ChessConsoleUI();
     game.run();
 }
+*/
 
