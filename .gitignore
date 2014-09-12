@@ -24,4 +24,9 @@
 
 # temp files
 *~
-chess
+
+# executables
+cmdline
+termui
+
+

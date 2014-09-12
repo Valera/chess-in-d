@@ -6,10 +6,6 @@ import std.algorithm;
 import std.ascii;
 import std.math;
 import std.string;
-import std.conv;
-import std.c.process;
-import core.runtime;
-
 
 // TODO: checkmate in case when player can not do any turn.
 // TODO: condition of a draw.

@@ -1,4 +1,12 @@
-module cmdline
+module cmdline;
+@safe
+
+import std.stdio;
+import std.string;
+import std.conv;
+import chess;
+import core.runtime;
+import std.c.process;
 
 class ChessConsoleUI {
     void run() {
