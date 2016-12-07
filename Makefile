@@ -1,15 +1,12 @@
-all: termui chess 
+all: termui cmdline
 
-chess: cmdline.d chess.d
-	dmd cmdline.d chess.d -de -unittest -debug -g
+cmdline: cmdline.d chess.d ~/projects/d-tui/libtui.o
+	dmd cmdline.d chess.d -de -unittest -debug -g -D -Dddocs/
 
 termui: termui.d chess.d ~/projects/d-tui/libtui.o
 	dmd termui.d chess.d -de -unittest -debug -g -I~/projects/d-tui/ \
-	    ~/projects/d-tui/libtui.o -L-lutil
+	    ~/projects/d-tui/libtui.o -L-lutil -D -Dddocs/
 
 
 clean:
-	rm *.o *~
-
-docs:
-	dmd -Dddocs chess.d -D
+	rm cmdline termui *.o *~

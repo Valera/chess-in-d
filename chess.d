@@ -11,6 +11,11 @@ import std.string;
 // TODO: condition of a draw.
 // TODO: find piece by predicate.
 
+bool coordsAreInBoard(uint row, uint col)
+{
+    return 0 <= row && row < 8 && 0 <= col && col < 8;
+}
+
 class Piece {
     enum Color { Black, White };
     this(int row, int col, Color color, ChessBoard board) {
@@ -21,8 +26,7 @@ class Piece {
     }
 
     invariant() {
-        assert(0 <= row && row < 8);
-        assert(0 <= col && col < 8);
+        assert(coordsAreInBoard(row, col));
     }
 
     const bool canMove(int new_row, int new_col, ChessBoard board) {
@@ -460,7 +464,7 @@ class ChessBoard {
             return board[r][c].color();
         }
 
-        bool movePiece(int row, int col, int new_row, int new_col) {
+        bool movePiece(int row, int col, int new_row, int new_col, out string err_string) {
             bool inBoard(int row, int col) {
                 return 0 <= row && row < 8 && 0 <= col && col < 8;
             }
@@ -538,10 +542,11 @@ class ChessBoard {
             outer: foreach(r; 0..8) {
                 foreach(c; 0..8) {
                     k = cast(King) board[r][c];
-                    if (k && k.color() == currentPlayerColor())
+                    if (k && k.color() == currentPlayerColor()) {
                         rk = r;
                         ck = c;
                         break outer;
+                    }
                 }
             }
             check = cellIsUnderAttack(rk, ck, k.oppositeColor());
@@ -591,7 +596,6 @@ class ChessBoard {
                     ++nBlack;
                     break;
             }
-            writeln("setPiece 3");
             board[row][col] = p;
             p.row = row;
             p.col = col;

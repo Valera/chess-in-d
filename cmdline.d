@@ -78,7 +78,11 @@ class ChessConsoleUI {
                             writeln("Enter four integers or EXIT, LOAD, SAVE, CASTLE LEFT, or CASLTE RIGHT");
                             break;
                         }
-                        board.movePiece(r0, c0, r1, c1);
+                        string err;
+                        board.movePiece(r0, c0, r1, c1, err);
+                        if (err) {
+                            writeln("Error sting ", err);
+                        }
                         turnPerformed = true;
                         break;
                 }
